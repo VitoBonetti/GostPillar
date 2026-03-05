@@ -1,17 +1,14 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
-
-</body>
-</html>{% load static %}
+{% load static %}
+{% load rbac_tags %}
+{% gp_is_god as is_god %}
+{% gp_is_admin as is_admin %}
+{% gp_has_scoped_role 'REGIONAL_VIEWER' as has_rv %}
+{% gp_has_scoped_role 'MANAGER' as has_manager %}
+{% gp_has_scoped_role 'OPERATOR' as has_operator %}
 <nav class="navbar navbar-expand-lg">
     <div class="container-fluid">
-        <a class="navbar-brand" href="{% url 'home' %}">
-            <img src="#">
+        <a class="navbar-brand" href="{% url 'dashboard' %}">
+            <img src="{% static 'images/logo.png' %}">
         </a>
 
         <button class="navbar-toggler" type="button"
@@ -23,11 +20,19 @@
             <span class="navbar-toggler-icon"></span>
         </button>
 
-        <div class="collapse navbar-collapse border-bottom border-1 border-success" id="navbarNav">
+        <div class="collapse navbar-collapse border-bottom border-1 border-success pb-3" id="navbarNav">
             <!-- Left items -->
             <ul class="navbar-nav">
+                {%  if is_god or is_admin or has_rv %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Regions</a>
+                    </li>
+                {% endif %}
                 <li class="nav-item">
                     <a class="nav-link" href="#">Markets</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Organizations</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="#">Assets</a>
@@ -38,6 +43,11 @@
                 <li class="nav-item">
                     <a class="nav-link" href="#">Vulnerabilities</a>
                 </li>
+                {%  if is_god or is_admin or has_manager %}
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Users</a>
+                </li>
+                {% endif %}
             </ul>
 
             <!-- Right items -->

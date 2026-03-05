@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'organizations.apps.OrganizationsConfig',
     'assets.apps.AssetsConfig',
     'tests.apps.TestsConfig',
-    'vulns.apps.VulnsConfig'
+    'vulns.apps.VulnsConfig',
+    'dashboard.apps.DashboardConfig'
 ]
 
 MIDDLEWARE = [

@@ -12,8 +12,8 @@ body {
 /* Hover state: same text color, peach background */
 .navbar .nav-link:hover,
 .navbar .nav-link:focus {
-    background-color: #F2D2BD !important;
-    border-radius: 1rem; /* rounded */
+    background-color: #EEEEEE !important;
+    border-radius: 0.6rem; /* rounded */
     transition: background-color 0.05s ease-in-out;
     color: #2D3A45;
 }
