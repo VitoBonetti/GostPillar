@@ -1,15 +1,12 @@
-<!doctype html>
-<html>
-  <head><title>GostPillar</title></head>
-  <body>
-    <h1>GostPillar</h1>
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Dashboard {% endblock title %}
+{% block custom_script %} {% endblock custom_script %}
+{% block content %}
 
     <p>{{ role_text }}</p>
 
     <p>
       Logged in as: {{ request.user.username }}
-      |
-      <a href="{% url 'accounts:logout' %}">Logout</a>
-    </p>
-  </body>
-</html>
+{% endblock content %}
+{% block custom_bottom_script %} {% endblock custom_bottom_script %}
