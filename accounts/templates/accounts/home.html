@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+  <head><title>GostPillar</title></head>
+  <body>
+    <h1>GostPillar</h1>
+
+    <p>{{ role_text }}</p>
+
+    <p>
+      Logged in as: {{ request.user.username }}
+      |
+      <a href="{% url 'accounts:logout' %}">Logout</a>
+    </p>
+  </body>
+</html>
