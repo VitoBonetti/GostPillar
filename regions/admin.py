@@ -3,4 +3,4 @@ from .models import Regions
 
 @admin.register(Regions)
 class RegionAdmin(admin.ModelAdmin):
-    search_fields = ("name",)
+    search_fields = ("region",)

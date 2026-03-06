@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Management{% endblock %}
+
+{% block content %}
+  <h1>Management</h1>
+
+  <div>
+    <p><strong>Active regions:</strong> {{ active_regions_count }}</p>
+    <p><strong>Total regions:</strong> {{ total_regions_count }}</p>
+  </div>
+
+  <hr>
+
+  <h2>Manage</h2>
+  <ul>
+    <li><a href="{% url 'regions' %}">Regions</a></li>
+  </ul>
+{% endblock %}

@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'widget_tweaks',
     'accounts.apps.AccountsConfig',
     'rbac.apps.RbacConfig',
     'regions.apps.RegionsConfig',
@@ -46,7 +47,8 @@ INSTALLED_APPS = [
     'assets.apps.AssetsConfig',
     'tests.apps.TestsConfig',
     'vulns.apps.VulnsConfig',
-    'dashboard.apps.DashboardConfig'
+    'dashboard.apps.DashboardConfig',
+    'management.apps.ManagementConfig',
 ]
 
 MIDDLEWARE = [

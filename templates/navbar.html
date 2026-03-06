@@ -52,9 +52,9 @@
 
             <!-- Right items -->
             <ul class="navbar-nav ms-auto">
-                {% if request.user.is_superuser %}
+                {% if is_god or is_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="#">Management</a>
+                        <a class="nav-link" href="{% url 'management' %}">Management</a>
                     </li>
                 {% endif %}
                 <li class="nav-item">
