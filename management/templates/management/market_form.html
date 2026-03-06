@@ -14,7 +14,18 @@
         <h2 class="mb-0 fw-bold">{% if editing %}Edit Market{% else %}Add New Market{% endif %}</h2>
     </div>
 </div>
-
+{% if messages %}
+    <div class="row mb-3">
+        <div class="col-md-8 mx-auto">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
 <div class="row">
     <div class="col-md-8 mx-auto">
         <div class="card shadow bg-dark-subtle border-0 border-top border-warning border-5">
@@ -76,10 +87,15 @@
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
-                        <a href="{% url 'markets' %}" class="btn btn-outline-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary px-4">
+                        <a href="{% url 'markets' %}" class="btn btn-outline-danger">Cancel</a>
+                        <button type="submit" class="btn btn-outline-secondary px-4">
                             {% if editing %}Save Changes{% else %}Create Market{% endif %}
                         </button>
+                        {%  if not editing %}
+                            <button type="submit" name="save_and_add" class="btn btn-outline-secondary px-4">
+                                Save and Add Another
+                            </button>
+                        {% endif %}
                     </div>
                 </form>
             </div>

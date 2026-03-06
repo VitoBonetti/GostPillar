@@ -1,11 +1,13 @@
 from django.db.models import Count
+from django.db import IntegrityError
 from django.views.generic import TemplateView
 from django.core.paginator import Paginator
 from management.mixins import ManagementAccessMixin
 from rbac.management_policy import admin_can_write, admin_can_delete
 from regions.models import Regions
 from markets.models import Market
-from .forms import RegionsForm, MarketForm
+from organizations.models import Organization
+from .forms import RegionsForm, MarketForm, OrganizationForm
 from django.views import View
 from django.contrib import messages
 from django.shortcuts import (
@@ -13,6 +15,7 @@ from django.shortcuts import (
     get_object_or_404,
     redirect
 )
+import json
 
 class ManagementHomeView(ManagementAccessMixin, TemplateView):
     template_name = "management/home.html"
@@ -185,6 +188,159 @@ class MarketFormView(ManagementAccessMixin, View):
             form.save()
             msg = "Market updated successfully." if market_id else "Market created successfully."
             messages.success(request, msg)
-            return redirect("markets")
+
+            if 'save_and_add' in request.POST:
+                return redirect("market_form")
+            else:
+                return redirect("markets")
 
         return render(request, self.template_name, {'form': form, 'editing': bool(market_id), 'market_id': market_id})
+
+
+class OrganizationListView(ManagementAccessMixin, View):
+    template_name = "management/organizations.html"
+
+    def get(self, request, *args, **kwargs):
+        queryset = Organization.objects.select_related('market__region').all()
+
+        # 1. Search Filter
+        search_query = request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(name__icontains=search_query)
+
+        # 2. Market Filter (NEW)
+        market_filter = request.GET.get('market', '')
+        if market_filter:
+            queryset = queryset.filter(market__uuid=market_filter)
+
+        # 3. Sorting
+        sort_by = request.GET.get('sort', 'name')
+        valid_sorts = ['name', '-name', 'market__market', '-market__market']
+        if sort_by in valid_sorts:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('name')
+
+        total_count = queryset.count()
+
+        # 4. Pagination
+        paginator = Paginator(queryset, 15)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        # 5. Get all markets for the dropdown filter
+        markets = Market.objects.all().order_by('market')
+
+        context = {
+            'page_obj': page_obj,
+            'search_query': search_query,
+            'market_filter': market_filter,
+            'markets': markets,
+            'sort_by': sort_by,
+            'total_count': total_count,
+            'can_write': admin_can_write(request.user),
+            'can_delete': admin_can_delete(request.user),
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        if "delete_id" in request.POST:
+            if not admin_can_delete(request.user):
+                messages.error(request, "Permission denied.")
+                return redirect("organizations")
+
+            org = get_object_or_404(Organization, uuid=request.POST["delete_id"])
+            org.delete()
+            messages.success(request, f"Organization '{org.name}' deleted.")
+        return redirect("organizations")
+
+
+class OrganizationFormView(ManagementAccessMixin, View):
+    template_name = "management/organization_form.html"
+
+    def get(self, request, *args, **kwargs):
+        if not admin_can_write(request.user):
+            messages.error(request, "Permission denied.")
+            return redirect("organizations")
+
+        org_id = request.GET.get("org_id")
+        if org_id:
+            org = get_object_or_404(Organization, uuid=org_id)
+            form = OrganizationForm(instance=org)
+            editing = True
+        else:
+            form = OrganizationForm()
+            editing = False
+
+        return render(request, self.template_name, {'form': form, 'editing': editing, 'org_id': org_id})
+
+    def post(self, request, *args, **kwargs):
+        if not admin_can_write(request.user):
+            messages.error(request, "Permission denied.")
+            return redirect("organizations")
+
+        submission_type = request.POST.get('submission_type', 'single')
+        org_id = request.GET.get("org_id")
+
+        # 1. Handle Single Form Submission
+        if submission_type == 'single':
+            if org_id:
+                org = get_object_or_404(Organization, uuid=org_id)
+                form = OrganizationForm(request.POST, instance=org)
+            else:
+                form = OrganizationForm(request.POST)
+
+            if form.is_valid():
+                form.save()
+                messages.success(request, "Organization saved successfully.")
+                if 'save_and_add' in request.POST:
+                    return redirect("organization_form")
+                return redirect("organizations")
+            return render(request, self.template_name, {'form': form, 'editing': bool(org_id), 'org_id': org_id})
+
+        # 2. Handle JSON Bulk Submissions
+        json_data = None
+        try:
+            if submission_type == 'json_text':
+                json_data = json.loads(request.POST.get('json_text', '{}'))
+            elif submission_type == 'json_file':
+                file = request.FILES.get('json_file')
+                if file:
+                    json_data = json.loads(file.read().decode('utf-8'))
+                else:
+                    raise ValueError("No file uploaded.")
+        except Exception as e:
+            messages.error(request, f"Invalid JSON format: {str(e)}")
+            return redirect("organization_form")
+
+        # 3. Process the parsed JSON
+        if json_data:
+            created_count = 0
+            skipped_count = 0
+            missing_markets = set()
+
+            for market_code, org_list in json_data.items():
+                # Find market by code
+                market = Market.objects.filter(code=market_code).first()
+                if not market:
+                    missing_markets.add(market_code)
+                    continue
+
+                # Create organizations
+                for org_name in org_list:
+                    obj, created = Organization.objects.get_or_create(market=market, name=org_name)
+                    if created:
+                        created_count += 1
+                    else:
+                        skipped_count += 1
+
+            # Provide feedback
+            if created_count > 0:
+                messages.success(request, f"Successfully created {created_count} organizations.")
+            if skipped_count > 0:
+                messages.info(request, f"Skipped {skipped_count} organizations (already existed in that market).")
+            if missing_markets:
+                messages.warning(request,
+                                 f"Skipped organizations for unknown market codes: {', '.join(missing_markets)}")
+
+        return redirect("organizations")
