@@ -22,3 +22,10 @@ class OrganizationForm(ModelForm):
     class Meta:
         model = Organization
         fields = ['market', 'name']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # show only the market name and force alphabetic order
+        self.fields['market'].label_from_instance = lambda obj: obj.market
+        self.fields['market'].queryset = Market.objects.filter(active=True).order_by('market')
