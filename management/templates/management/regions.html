@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load widget_tweaks %}
+{% load static %}
 
 {% block title %}Manage Regions{% endblock %}
 
@@ -77,103 +78,146 @@
         <div class="card shadow-sm mb-3 border-secondary bg-dark text-light">
             <div class="card-body p-3">
                 <form method="get" class="row g-2 align-items-center">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-dark border-secondary text-warning"><i class="bi bi-search"></i></span>
-                            <input type="text" name="search" class="form-control bg-dark text-light border-secondary" placeholder="Search regions..." value="{{ search_query }}">
+                            <input type="text" name="search" class="form-control bg-dark text-light border-secondary" placeholder="Search..." value="{{ search_query }}">
                         </div>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
+                        <select name="active" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="">All Statuses</option>
+                            <option value="true" {% if active_filter == 'true' %}selected{% endif %}>Active</option>
+                            <option value="false" {% if active_filter == 'false' %}selected{% endif %}>Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <select name="sort" class="form-select form-select-sm bg-dark text-light border-secondary">
                             <option value="region" {% if sort_by == 'region' %}selected{% endif %}>Name (A-Z)</option>
                             <option value="-region" {% if sort_by == '-region' %}selected{% endif %}>Name (Z-A)</option>
+                            <option value="-market_count" {% if sort_by == '-market_count' %}selected{% endif %}>Markets (High-Low)</option>
+                            <option value="market_count" {% if sort_by == 'market_count' %}selected{% endif %}>Markets (Low-High)</option>
                             <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
                         </select>
                     </div>
                     <div class="col-md-2 d-flex gap-2">
                         <button type="submit" class="btn btn-sm btn-warning fw-bold w-100">Apply</button>
-                        <a href="{% url 'regions' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                        <a href="{% url 'regions' %}" class="btn btn-sm btn-outline-secondary" title="Clear Filters"><i class="bi bi-x-lg"></i></a>
                     </div>
                 </form>
             </div>
         </div>
-        <div class="card border border-1 border-dark shawod rounded ">
-            <div class="card-body p-0 ">
-                <div class="table-responsive">
-                    <table class="table table-dark table-striped align-middle mb-0" style="min-width: 800px;">
-                        <thead class="orange-header">
-                        <tr class="orange-header">
-                            <th class="ps-3 text-dark orange-header" style="background-color: #FF8C00 !important; width: 40%">Name</th>
-                            <th class="text-center text-dark orange-header" style="background-color: #FF8C00 !important; width: 10%">Status</th>
-                            <th class="text-center text-dark orange-header" style="background-color: #FF8C00 !important; width: 10%">Markets</th>
-                            <th class="text-center text-dark orange-header" style="background-color: #FF8C00 !important; width: 20%">Created At</th>
-                            <th class="text-end pe-3 text-dark orange-header" style="background-color: #FF8C00 !important; width: 20%">Actions</th>
-                        </tr>
-                    </thead>
-                        <tbody>
-                        {% for r in page_obj %}
-                        <tr>
-                            <td class="ps-3 fw-bold">{{ r.region }}</td>
-                            <td class="text-center">
-                                {% if r.active %}
-                                    <span class="badge bg-success rounded-pill">Active</span>
-                                {% else %}
-                                    <span class="badge bg-secondary rounded-pill">Inactive</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-info text-dark rounded-pill">{{ r.market_count }}</span>
-                            </td>
-                            <td class="text-center">{{ r.created_at|date:"M d, Y" }}</td>
-                            <td class="text-end pe-3">
-                                {% if can_write %}
-                                    <a href="{% url 'regions' %}?region_id={{ r.uuid }}" class="btn btn-sm btn-outline-light">
-                                        <i class="bi bi-pencil"></i> Edit
-                                    </a>
-                                {% endif %}
-                                {% if can_delete %}
-                                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#deleteRegionModal{{ r.uuid }}">
-                                        <i class="bi bi-trash"></i> Delete
-                                    </button>
 
-                                    <div class="modal fade" id="deleteRegionModal{{ r.uuid }}" tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content bg-dark text-light border-warning">
-                                                <div class="modal-header border-secondary">
-                                                    <h5 class="modal-title fw-bold text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion</h5>
-                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body text-start text-wrap text-break">
-                                                    Are you absolutely sure you want to delete the region <strong>{{ r.region }}</strong>? This action cannot be undone.
-                                                </div>
-                                                <div class="modal-footer border-secondary">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                    <form method="post" class="d-inline">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="delete_id" value="{{ r.uuid }}">
-                                                        <button type="submit" class="btn btn-warning fw-bold text-dark">Yes, Delete</button>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+        <div class="card border border-1 border-dark shadow rounded">
+            <div class="card-body p-0">
+                <form method="post" id="bulk-action-form">
+                    {% csrf_token %}
+                    {% if can_write %}
+                    <div class="bg-dark p-2 border-bottom border-secondary d-flex align-items-center gap-2">
+                        <select name="action" class="form-select form-select-sm bg-dark text-light border-secondary" style="width: auto;" required>
+                            <option value="" selected disabled>Bulk Actions...</option>
+                            <option value="bulk_activate">Set Active</option>
+                            <option value="bulk_deactivate">Set Inactive</option>
+                            {% if can_delete %}<option value="bulk_delete" class="text-danger fw-bold">Delete Selected</option>{% endif %}
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-warning fw-bold bulk-apply-btn" disabled>Apply Action</button>
+                    </div>
+                    {% endif %}
+
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped align-middle mb-0" style="min-width: 800px;">
+                            <thead class="orange-header">
+                                <tr>
+                                    {% if can_write %}
+                                    <th class="ps-3 text-dark orange-header" style="background-color: #FF8C00 !important; width: 40px;">
+                                        <input type="checkbox" id="selectAll" class="form-check-input border-dark">
+                                    </th>
+                                    {% endif %}
+                                    <th class="{% if not can_write %}ps-3{% endif %} text-dark orange-header" style="background-color: #FF8C00 !important; width: 35%">Name</th>
+                                    <th class="text-center text-dark orange-header" style="background-color: #FF8C00 !important; width: 10%">Status</th>
+                                    <th class="text-center text-dark orange-header" style="background-color: #FF8C00 !important; width: 10%">Markets</th>
+                                    <th class="text-center text-dark orange-header" style="background-color: #FF8C00 !important; width: 20%">Created At</th>
+                                    <th class="text-end pe-3 text-dark orange-header" style="background-color: #FF8C00 !important; width: 25%">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {% for r in page_obj %}
+                            <tr>
+                                {% if can_write %}
+                                <td class="ps-3">
+                                    <input type="checkbox" name="selected_items" value="{{ r.uuid }}" class="form-check-input item-checkbox border-secondary">
+                                </td>
                                 {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="text-center py-4 text-muted">No regions found. Get started by creating one!</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                <td class="{% if not can_write %}ps-3{% endif %} fw-bold">{{ r.region }}</td>
+                                <td class="text-center">
+                                    {% if r.active %}
+                                        <span class="badge bg-success rounded-pill">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary rounded-pill">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info text-dark rounded-pill">{{ r.market_count }}</span>
+                                </td>
+                                <td class="text-center">{{ r.created_at|date:"M d, Y" }}</td>
+                                <td class="text-end pe-3">
+                                    {% if can_write %}
+                                        <a href="{% url 'regions' %}?region_id={{ r.uuid }}" class="btn btn-sm btn-outline-light">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </a>
+                                    {% endif %}
+                                    {% if can_delete %}
+                                        <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#deleteRegionModal{{ r.uuid }}">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No regions found. Get started by creating one!</td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+
+                {% for r in page_obj %}
+                    {% if can_delete %}
+                    <div class="modal fade" id="deleteRegionModal{{ r.uuid }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content bg-dark text-light border-warning">
+                                <div class="modal-header border-secondary">
+                                    <h5 class="modal-title fw-bold text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body text-start text-wrap text-break">
+                                    Are you absolutely sure you want to delete the region <strong>{{ r.region }}</strong>? This action cannot be undone.
+                                </div>
+                                <div class="modal-footer border-secondary">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <form method="post" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="delete_id" value="{{ r.uuid }}">
+                                        <button type="submit" class="btn btn-warning fw-bold text-dark">Yes, Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endfor %}
 
                 {% if page_obj.has_other_pages %}
                 {% include 'management/pagination.html' %}
                 {% endif %}
-                </div>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+{% block custom_bottom_script %}
+{{ block.super }}
+<script src="{% static 'js/bulk_select_all.js' %}"></script>
 {% endblock %}

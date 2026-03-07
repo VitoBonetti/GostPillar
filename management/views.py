@@ -80,18 +80,48 @@ class RegionView(ManagementAccessMixin, View):
         return self._render_page(request, form_region, region_id)
 
     def post(self, request, *args, **kwargs):
-        # 1. Handle Delete Action
+        # 1. Handle Single Delete Action
         if "delete_id" in request.POST:
             if not admin_can_delete(request.user):
                 messages.error(request, "You do not have permission to delete regions.")
                 return redirect("regions")
 
-            region = get_object_or_404(Regions, uuid=request.POST["delete_id"])
-            region.delete()
-            messages.success(request, "Region deleted successfully.")
+            try:
+                region = get_object_or_404(Regions, uuid=request.POST["delete_id"])
+                region.delete()
+                messages.success(request, "Region deleted successfully.")
+            except Exception as e:
+                messages.error(request, f"Could not delete region. Error: {str(e)}")
             return redirect("regions")
 
-        # 2. Handle Create / Update Action
+        # 2. Handle Bulk Actions
+        action = request.POST.get('action')
+        selected_ids = request.POST.getlist('selected_items')
+
+        if action and selected_ids:
+            if not admin_can_write(request.user):
+                messages.error(request, "Permission denied.")
+                return redirect("regions")
+
+            if action == 'bulk_delete':
+                if not admin_can_delete(request.user):
+                    messages.error(request, "You do not have permission to delete.")
+                else:
+                    try:
+                        count, _ = Regions.objects.filter(uuid__in=selected_ids).delete()
+                        messages.success(request, f"Successfully deleted {count} regions.")
+                    except Exception as e:
+                        messages.error(request, f"Bulk delete failed. Error: {str(e)}")
+            elif action == 'bulk_activate':
+                count = Regions.objects.filter(uuid__in=selected_ids).update(active=True)
+                messages.success(request, f"Successfully activated {count} regions.")
+            elif action == 'bulk_deactivate':
+                count = Regions.objects.filter(uuid__in=selected_ids).update(active=False)
+                messages.success(request, f"Successfully deactivated {count} regions.")
+
+            return redirect("regions")
+
+        # 3. Handle Create / Update Action
         if not admin_can_write(request.user):
             messages.error(request, "You do not have permission to modify regions.")
             return redirect("regions")
@@ -109,6 +139,11 @@ class RegionView(ManagementAccessMixin, View):
             messages.success(request, msg)
             return redirect("regions")
 
+        for field, errors in form_region.errors.items():
+            for error in errors:
+                messages.error(request,
+                               f"Validation Error: {error}" if field == '__all__' else f"{field.title()}: {error}")
+
         # If form is invalid, re-render the page with errors
         return self._render_page(request, form_region, region_id)
 
@@ -116,14 +151,21 @@ class RegionView(ManagementAccessMixin, View):
         # Base Queryset
         queryset = Regions.objects.annotate(market_count=Count('markets'))
 
-        # 1. Search Filter
+        # Search Filter
         search_query = request.GET.get('search', '')
         if search_query:
             queryset = queryset.filter(region__icontains=search_query)
 
-        # 2. Sorting
+        # Active Status Filter
+        active_filter = request.GET.get('active', '')
+        if active_filter == 'true':
+            queryset = queryset.filter(active=True)
+        elif active_filter == 'false':
+            queryset = queryset.filter(active=False)
+
+        # Sorting
         sort_by = request.GET.get('sort', 'region')
-        valid_sorts = ['region', '-region', '-created_at', 'created_at']
+        valid_sorts = ['region', '-region', '-created_at', 'created_at', 'market_count', '-market_count']
         if sort_by in valid_sorts:
             queryset = queryset.order_by(sort_by)
         else:
@@ -141,6 +183,7 @@ class RegionView(ManagementAccessMixin, View):
         context = {
             "page_obj": page_obj,
             "search_query": search_query,  # Pass search back to template
+            "active_filter": active_filter,
             "sort_by": sort_by,  # Pass sort back to template
             "form_region": form_region,
             "active_regions_count": active_count,
@@ -164,7 +207,20 @@ class MarketListView(ManagementAccessMixin, View):
         if search_query:
             queryset = queryset.filter(market__icontains=search_query)
 
-        # 2. Sorting
+        # 2. Filtering
+        active_filter = request.GET.get('active', '')
+        if active_filter == 'true':
+            queryset = queryset.filter(active=True)
+        elif active_filter == 'false':
+            queryset = queryset.filter(active=False)
+
+        key_filter = request.GET.get('key_market', '')
+        if key_filter == 'true':
+            queryset = queryset.filter(key_market=True)
+        elif key_filter == 'false':
+            queryset = queryset.filter(key_market=False)
+
+        # 3. Sorting
         sort_by = request.GET.get('sort', 'market')
         valid_sorts = ['market', '-market', 'region__region', '-region__region', 'created_at', '-created_at']
         if sort_by in valid_sorts:
@@ -172,13 +228,12 @@ class MarketListView(ManagementAccessMixin, View):
         else:
             queryset = queryset.order_by('market')
 
-        # 3. Stats (calculate before pagination so it reflects overall data)
-        # You could also apply search_query to stats if you want them to be contextual
+        # 4. Stats (calculate before pagination so it reflects overall data)
         total_count = Market.objects.count()
         active_count = Market.objects.filter(active=True).count()
         key_count = Market.objects.filter(key_market=True).count()
 
-        # 4. Pagination
+        # 5. Pagination
         paginator = Paginator(queryset, 10)  # 10 items per page
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
@@ -186,6 +241,8 @@ class MarketListView(ManagementAccessMixin, View):
         context = {
             'page_obj': page_obj,
             'search_query': search_query,
+            'active_filter': active_filter,
+            'key_filter': key_filter,
             'sort_by': sort_by,
             'total_count': total_count,
             'active_count': active_count,
@@ -196,7 +253,7 @@ class MarketListView(ManagementAccessMixin, View):
         return render(request, self.template_name, context)
 
     def post(self, request, *args, **kwargs):
-        # Handle Deletion
+        # Handle Single Deletion
         if "delete_id" in request.POST:
             if not admin_can_delete(request.user):
                 messages.error(request, "You do not have permission to delete markets.")
@@ -208,6 +265,39 @@ class MarketListView(ManagementAccessMixin, View):
                 messages.success(request, f"Market '{market_name}' deleted successfully.")
             except Exception as e:
                 messages.error(request, f"Could not delete market. Error: {str(e)}")
+
+            return redirect("markets")
+
+        action = request.POST.get('action')
+        selected_ids = request.POST.getlist('selected_items')
+
+        if action and selected_ids:
+            if not admin_can_write(request.user):
+                messages.error(request, "Permission denied.")
+                return redirect("markets")
+
+            if action == 'bulk_delete':
+                if not admin_can_delete(request.user):
+                    messages.error(request, "You do not have permission to delete.")
+                else:
+                    try:
+                        count, _ = Market.objects.filter(uuid__in=selected_ids).delete()
+                        messages.success(request, f"Successfully deleted {count} markets.")
+                    except Exception as e:
+                        messages.error(request, f"Bulk delete failed. Error: {str(e)}")
+            elif action == 'bulk_activate':
+                count = Market.objects.filter(uuid__in=selected_ids).update(active=True)
+                messages.success(request, f"Successfully activated {count} markets.")
+            elif action == 'bulk_deactivate':
+                count = Market.objects.filter(uuid__in=selected_ids).update(active=False)
+                messages.success(request, f"Successfully deactivated {count} markets.")
+            elif action == 'bulk_set_key':
+                count = Market.objects.filter(uuid__in=selected_ids).update(key_market=True)
+                messages.success(request, f"Successfully marked {count} markets as Key Markets.")
+            elif action == 'bulk_remove_key':
+                count = Market.objects.filter(uuid__in=selected_ids).update(key_market=False)
+                messages.success(request, f"Successfully removed Key Market status from {count} markets.")
+
         return redirect("markets")
 
 
@@ -284,7 +374,7 @@ class OrganizationListView(ManagementAccessMixin, View):
 
         # 3. Sorting
         sort_by = request.GET.get('sort', 'name')
-        valid_sorts = ['name', '-name', 'market__market', '-market__market']
+        valid_sorts = ['name', '-name', 'market__market', '-market__market', 'market__region__region', '-market__region__region']
         if sort_by in valid_sorts:
             queryset = queryset.order_by(sort_by)
         else:
@@ -318,9 +408,30 @@ class OrganizationListView(ManagementAccessMixin, View):
                 messages.error(request, "Permission denied.")
                 return redirect("organizations")
 
-            org = get_object_or_404(Organization, uuid=request.POST["delete_id"])
-            org.delete()
-            messages.success(request, f"Organization '{org.name}' deleted.")
+            try:
+                org = get_object_or_404(Organization, uuid=request.POST["delete_id"])
+                org.delete()
+                messages.success(request, f"Organization '{org.name}' deleted.")
+            except Exception as e:
+                messages.error(request, f"Could not delete organization. Error: {str(e)}")
+
+            return redirect("organizations")
+
+        # Handle Bulk Deletion
+        action = request.POST.get('action')
+        selected_ids = request.POST.getlist('selected_items')
+
+        if action == 'bulk_delete' and selected_ids:
+            if not admin_can_delete(request.user):
+                messages.error(request, "Permission denied.")
+                return redirect("organizations")
+
+            try:
+                count, _ = Organization.objects.filter(uuid__in=selected_ids).delete()
+                messages.success(request, f"Successfully deleted {count} organizations.")
+            except Exception as e:
+                messages.error(request, f"Bulk delete failed. Error: {str(e)}")
+
         return redirect("organizations")
 
 
