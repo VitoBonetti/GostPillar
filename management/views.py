@@ -7,8 +7,15 @@ from rbac.management_policy import admin_can_write, admin_can_delete
 from regions.models import Regions
 from markets.models import Market
 from organizations.models import Organization
+from rbac.models import RoleAssignment
 from accounts.models import User
-from .forms import RegionsForm, MarketForm, OrganizationForm
+from .forms import (
+    RegionsForm,
+    MarketForm,
+    OrganizationForm,
+    UserForm,
+    RoleAssignmentForm
+)
 from django.views import View
 from django.contrib import messages
 from django.shortcuts import (
@@ -540,3 +547,254 @@ class OrganizationFormView(ManagementAccessMixin, View):
                                  f"Skipped organizations for unknown market codes: {', '.join(missing_markets)}")
 
         return redirect("organizations")
+
+
+class UserListView(ManagementAccessMixin, View):
+    template_name = "management/users.html"
+
+    def get(self, request, *args, **kwargs):
+        queryset = User.objects.all()
+
+        search_query = request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(email__icontains=search_query)
+
+        active_filter = request.GET.get('active', '')
+        if active_filter == 'true':
+            queryset = queryset.filter(is_active=True)
+        elif active_filter == 'false':
+            queryset = queryset.filter(is_active=False)
+
+        admin_filter = request.GET.get('is_admin', '')
+        if admin_filter == 'true':
+            queryset = queryset.filter(is_platform_admin=True)
+
+        sort_by = request.GET.get('sort', 'email')
+        valid_sorts = ['email', '-email', 'first_name', '-first_name', 'date_joined', '-date_joined']
+        if sort_by in valid_sorts:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('email')
+
+        paginator = Paginator(queryset, 15)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        context = {
+            'page_obj': page_obj,
+            'search_query': search_query,
+            'active_filter': active_filter,
+            'admin_filter': admin_filter,
+            'sort_by': sort_by,
+            'total_count': User.objects.count(),
+            'admin_count': User.objects.filter(is_platform_admin=True).count(),
+            'can_write': admin_can_write(request.user),
+            'can_delete': admin_can_delete(request.user),
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, *args, **kwargs):
+        # 1. Handle Single Deletion
+        if "delete_id" in request.POST:
+            if not admin_can_delete(request.user):
+                messages.error(request, "Permission denied.")
+                return redirect("users")
+            try:
+                user_obj = get_object_or_404(User, id=request.POST["delete_id"])
+
+                # SECURITY: Cannot delete yourself
+                if user_obj == request.user:
+                    messages.error(request, "You cannot delete your own account.")
+                    return redirect("users")
+
+                # SECURITY: Admin cannot delete GOD or Admin
+                if (user_obj.is_superuser or user_obj.is_platform_admin) and not request.user.is_superuser:
+                    messages.error(request, "Permission denied. Only GODs can delete global administrators.")
+                    return redirect("users")
+
+                user_obj.delete()
+                messages.success(request, f"User '{user_obj.email}' deleted.")
+            except Exception as e:
+                messages.error(request, f"Could not delete user. Error: {str(e)}")
+            return redirect("users")
+
+        # 2. Handle Bulk Actions
+        action = request.POST.get('action')
+        selected_ids = request.POST.getlist('selected_items')
+
+        if action and selected_ids:
+            if not admin_can_write(request.user):
+                messages.error(request, "Permission denied.")
+                return redirect("users")
+
+            # Get base queryset
+            users_to_modify = User.objects.filter(id__in=selected_ids)
+
+            # SECURITY: Exclude yourself from bulk actions (so you don't accidentally lock yourself out)
+            users_to_modify = users_to_modify.exclude(id=request.user.id)
+
+            # SECURITY: If not a GOD, strictly exclude all GODs and Admins from being modified in bulk
+            if not request.user.is_superuser:
+                original_count = users_to_modify.count()
+                users_to_modify = users_to_modify.exclude(is_superuser=True).exclude(is_platform_admin=True)
+                if users_to_modify.count() < original_count:
+                    messages.warning(request,
+                                     "Some selected users were skipped because you lack permission to modify global administrators.")
+
+            if action == 'bulk_delete' and admin_can_delete(request.user):
+                count, _ = users_to_modify.delete()
+                messages.success(request, f"Successfully deleted {count} users.")
+            elif action == 'bulk_activate':
+                count = users_to_modify.update(is_active=True)
+                messages.success(request, f"Activated {count} users.")
+            elif action == 'bulk_deactivate':
+                count = users_to_modify.update(is_active=False)
+                messages.success(request, f"Deactivated {count} users.")
+
+        return redirect("users")
+
+
+class UserFormView(ManagementAccessMixin, View):
+    template_name = "management/user_form.html"
+
+    def get(self, request, *args, **kwargs):
+        if not admin_can_write(request.user):
+            messages.error(request, "Permission denied.")
+            return redirect("users")
+
+        user_id = request.GET.get("user_id")
+        if user_id:
+            user_obj = get_object_or_404(User, id=user_id)
+
+            # SECURITY: Admin cannot load the edit page for a GOD or Admin
+            if (user_obj.is_superuser or user_obj.is_platform_admin) and not request.user.is_superuser:
+                messages.error(request, "Permission denied. Only GODs can edit global administrators.")
+                return redirect("users")
+
+            form = UserForm(instance=user_obj)
+            editing = True
+        else:
+            form = UserForm()
+            editing = False
+
+        return render(request, self.template_name, {'form': form, 'editing': editing, 'user_id': user_id})
+
+    def post(self, request, *args, **kwargs):
+        if not admin_can_write(request.user):
+            messages.error(request, "Permission denied.")
+            return redirect("users")
+
+        user_id = request.GET.get("user_id")
+        if user_id:
+            user_obj = get_object_or_404(User, id=user_id)
+
+            # SECURITY: Admin cannot submit edits for a GOD or Admin (prevents malicious POST requests)
+            if (user_obj.is_superuser or user_obj.is_platform_admin) and not request.user.is_superuser:
+                messages.error(request, "Permission denied. Only GODs can edit global administrators.")
+                return redirect("users")
+
+            form = UserForm(request.POST, instance=user_obj)
+        else:
+            form = UserForm(request.POST)
+
+        if form.is_valid():
+            new_user = form.save(commit=False)
+            if not user_id:
+                new_user.set_password('GostPillar2024!')
+            new_user.save()
+
+            messages.success(request, "User saved successfully.")
+            return redirect("users")
+
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f"{field.title()}: {error}")
+
+        return render(request, self.template_name, {'form': form, 'editing': bool(user_id), 'user_id': user_id})
+
+
+class UserRoleView(ManagementAccessMixin, View):
+    template_name = "management/user_roles.html"
+
+    def get(self, request, user_id, *args, **kwargs):
+        target_user = get_object_or_404(User, id=user_id)
+        assignments = RoleAssignment.objects.filter(user=target_user)
+        form = RoleAssignmentForm()
+
+        context = {
+            'target_user': target_user,
+            'assignments': assignments,
+            'form': form,
+            'can_write': admin_can_write(request.user),
+            'can_delete': admin_can_delete(request.user),
+        }
+        return render(request, self.template_name, context)
+
+    def post(self, request, user_id, *args, **kwargs):
+        target_user = get_object_or_404(User, id=user_id)
+
+        if "global_role" in request.POST:
+            if not request.user.is_superuser:
+                messages.error(request, "Only GOD (Superusers) can manage global platform roles.")
+                return redirect("user_roles", user_id=user_id)
+            # 1. Handle Global Role Management (Promote/Demote GODs and Admins)
+            if target_user == request.user:
+                messages.error(request, "You cannot modify your own global role. Ask another GOD to do it.")
+                return redirect("user_roles", user_id=user_id)
+
+            new_role = request.POST.get("global_role")
+            if new_role == "god":
+                target_user.is_superuser = True
+                target_user.is_platform_admin = False
+                messages.success(request, f"{target_user.username} has been promoted to GOD (Superuser).")
+            elif new_role == "admin":
+                target_user.is_superuser = False
+                target_user.is_platform_admin = True
+                messages.success(request, f"{target_user.username} has been promoted to Platform Admin.")
+            elif new_role == "standard":
+                target_user.is_superuser = False
+                target_user.is_platform_admin = False
+                messages.success(request, f"{target_user.username} is now a Standard User.")
+
+            target_user.save()
+            return redirect("user_roles", user_id=user_id)
+
+        # 2. SECURITY CHECK: Admins cannot modify scopes of GODs or other Admins
+        if (target_user.is_superuser or target_user.is_platform_admin) and not request.user.is_superuser:
+            messages.error(request, "Permission Denied. Only GODs can modify the roles of global administrators.")
+            return redirect("user_roles", user_id=user_id)
+
+        # 3. Handle Delete Assignment
+        if "delete_assignment_id" in request.POST:
+            if not admin_can_delete(request.user):
+                messages.error(request, "Permission denied.")
+                return redirect("user_roles", user_id=user_id)
+
+            assignment = get_object_or_404(RoleAssignment, id=request.POST["delete_assignment_id"], user=target_user)
+            assignment.delete()
+            messages.success(request, "Role assignment removed.")
+            return redirect("user_roles", user_id=user_id)
+
+        # 4. Handle Add Assignment
+        if not admin_can_write(request.user):
+            messages.error(request, "Permission denied.")
+            return redirect("user_roles", user_id=user_id)
+
+        form = RoleAssignmentForm(request.POST, user=target_user)
+        if form.is_valid():
+            try:
+                form.save()
+                messages.success(request, f"Role assigned successfully.")
+            except Exception as e:
+                # Catch database-level constraint errors
+                messages.error(request, f"Error assigning role: {str(e)}")
+        else:
+            # Catch model-level ValidationErrors (where your RBAC rules live)
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        messages.error(request, f"Rule Violation: {error}")
+                    else:
+                        messages.error(request, f"{field.title()}: {error}")
+
+        return redirect("user_roles", user_id=user_id)

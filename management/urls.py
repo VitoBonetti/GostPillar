@@ -6,6 +6,9 @@ from .views import (
     MarketFormView,
     OrganizationListView,
     OrganizationFormView,
+    UserListView,
+    UserFormView,
+    UserRoleView,
 )
 
 urlpatterns = [
@@ -15,4 +18,7 @@ urlpatterns = [
     path('markets/form/', MarketFormView.as_view(), name='market_form'),
     path('organizations/', OrganizationListView.as_view(), name='organizations'),
     path('organizations/form/', OrganizationFormView.as_view(), name='organization_form'),
+    path('users/', UserListView.as_view(), name='users'),
+    path('users/form/', UserFormView.as_view(), name='user_form'),
+    path('users/<int:user_id>/roles/', UserRoleView.as_view(), name='user_roles'),
 ]
