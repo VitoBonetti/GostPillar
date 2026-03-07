@@ -69,17 +69,31 @@
                     <div class="mb-4">
                         <label class="form-label fw-bold">Flag Icon</label>
 
-                        <div id="flag-drop-zone" class="border border-2 border-dashed border-secondary rounded p-4 text-center bg-light position-relative" style="cursor: pointer; transition: all 0.2s;">
-                            <i class="bi bi-image text-secondary" style="font-size: 2rem;"></i>
-                            <h6 class="mt-2 fw-bold text-dark mb-1">Drag & Drop flag image here</h6>
-                            <p class="text-muted small mb-3">or click to browse</p>
+                        <input type="checkbox" name="flag_icons-clear" id="id_flag_icons-clear" class="d-none" value="on">
 
-                            <div class="text-start d-inline-block position-relative z-3">
-                                {% render_field form.flag_icons id="id_flag_icons" class="form-control-file text-muted small" %}
+                        <input type="file" name="flag_icons" id="id_flag_icons" class="d-none" accept="image/*">
+
+                        <div id="flag-drop-zone" class="border border-2 border-dashed border-secondary rounded p-4 text-center bg-dark text-light position-relative" style="cursor: pointer; transition: all 0.2s;">
+
+                            <div id="drop-zone-text" class="{% if form.instance.flag_icons %}d-none{% endif %}">
+                                <i class="bi bi-image text-secondary" style="font-size: 2rem;"></i>
+                                <h6 class="mt-2 fw-bold mb-1">Drag & Drop flag image here</h6>
+                                <p class="text-muted small mb-0">or click to browse</p>
                             </div>
+
+                            <img id="flag-preview" src="{% if form.instance.flag_icons %}{{ form.instance.flag_icons.url }}{% endif %}" class="mt-2 mb-2 rounded shadow-sm {% if not form.instance.flag_icons %}d-none{% endif %}" style="max-height: 80px; max-width: 100%;">
                         </div>
 
-                        <div id="flag-file-name-display" class="text-success fw-bold text-center mt-2 small"></div>
+                        <div class="d-flex justify-content-between align-items-center mt-2">
+                            <div id="flag-file-name-display" class="text-success fw-bold small">
+                                {% if form.instance.flag_icons %}
+                                    <i class="bi bi-check-circle-fill"></i> Current: {{ form.instance.flag_icons.name }}
+                                {% endif %}
+                            </div>
+                            <button type="button" id="remove-image-btn" class="btn btn-sm btn-outline-danger {% if not form.instance.flag_icons %}d-none{% endif %}">
+                                <i class="bi bi-trash"></i> Remove Image
+                            </button>
+                        </div>
                         <div class="text-danger small mt-1">{{ form.flag_icons.errors|striptags }}</div>
                     </div>
 
@@ -120,32 +134,31 @@
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const dropZone = document.getElementById('flag-drop-zone');
-        // Django's default id for the flag_icons field is 'id_flag_icons'
         const fileInput = document.getElementById('id_flag_icons');
+        const clearCheckbox = document.getElementById('id_flag_icons-clear');
         const fileDisplay = document.getElementById('flag-file-name-display');
+        const dropZoneText = document.getElementById('drop-zone-text');
+        const imgPreview = document.getElementById('flag-preview');
+        const removeBtn = document.getElementById('remove-image-btn');
 
         if(dropZone && fileInput) {
-            // Click to open file dialog (only if they didn't click the input directly)
-            dropZone.addEventListener('click', (e) => {
-                if(e.target !== fileInput) {
-                    fileInput.click();
-                }
-            });
+            // Click to open file dialog
+            dropZone.addEventListener('click', () => fileInput.click());
 
-            // Handle Drag events
+            // Handle Drag events (visual feedback)
             ['dragover', 'dragenter'].forEach(eventName => {
                 dropZone.addEventListener(eventName, (e) => {
                     e.preventDefault();
-                    dropZone.classList.remove('bg-light', 'border-secondary');
-                    dropZone.classList.add('bg-white', 'border-primary');
+                    dropZone.classList.add('border-warning');
+                    dropZone.classList.remove('border-secondary');
                 });
             });
 
             ['dragleave', 'dragend', 'drop'].forEach(eventName => {
                 dropZone.addEventListener(eventName, (e) => {
                     e.preventDefault();
-                    dropZone.classList.add('bg-light', 'border-secondary');
-                    dropZone.classList.remove('bg-white', 'border-primary');
+                    dropZone.classList.remove('border-warning');
+                    dropZone.classList.add('border-secondary');
                 });
             });
 
@@ -154,8 +167,7 @@
                 const files = e.dataTransfer.files;
                 if (files.length) {
                     fileInput.files = files; // Assign files to the hidden input
-                    // Trigger the change event manually
-                    fileInput.dispatchEvent(new Event('change'));
+                    fileInput.dispatchEvent(new Event('change')); // Trigger change
                 }
             });
 
@@ -163,40 +175,44 @@
             fileInput.addEventListener('change', function() {
                 if (this.files.length) {
                     const file = this.files[0];
-                    const fileName = file.name;
 
-                    // Show file name
-                    fileDisplay.innerHTML = `<i class="bi bi-check-circle-fill"></i> Selected: ${fileName}`;
-                    dropZone.classList.add('border-success', 'bg-white');
-                    dropZone.classList.remove('border-secondary', 'border-primary', 'bg-light');
+                    // Uncheck the Django 'clear' checkbox since we are uploading a new file
+                    clearCheckbox.checked = false;
 
-                    // NEW: FileReader for live image preview
+                    fileDisplay.innerHTML = `<i class="bi bi-check-circle-fill"></i> Selected: ${file.name}`;
+                    removeBtn.classList.remove('d-none'); // Show remove button
+
                     if (file.type.startsWith('image/')) {
                         const reader = new FileReader();
                         reader.onload = function(e) {
-                            // Find the icon and replace it with the image
-                            const icon = dropZone.querySelector('.bi-image');
-                            if (icon) icon.style.display = 'none';
-
-                            // Check if preview already exists, update or create
-                            let imgPreview = document.getElementById('flag-preview');
-                            if (!imgPreview) {
-                                imgPreview = document.createElement('img');
-                                imgPreview.id = 'flag-preview';
-                                imgPreview.className = 'mt-2 mb-2 rounded shadow-sm';
-                                imgPreview.style.maxHeight = '80px';
-                                imgPreview.style.maxWidth = '100%';
-                                // Insert after the h6 title
-                                dropZone.insertBefore(imgPreview, dropZone.querySelector('h6').nextSibling);
-                            }
                             imgPreview.src = e.target.result;
+                            imgPreview.classList.remove('d-none'); // Show image
+                            dropZoneText.classList.add('d-none');  // Hide text
                         }
                         reader.readAsDataURL(file);
                     }
-
-                    this.style.color = "inherit";
                 }
             });
+
+            // Handle Remove Button Click
+            if (removeBtn) {
+                removeBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent opening the file dialog
+
+                    // Clear the actual file input
+                    fileInput.value = '';
+
+                    // Check the hidden checkbox so Django deletes it on save
+                    clearCheckbox.checked = true;
+
+                    // Reset the UI
+                    imgPreview.src = '';
+                    imgPreview.classList.add('d-none');
+                    dropZoneText.classList.remove('d-none');
+                    removeBtn.classList.add('d-none');
+                    fileDisplay.innerHTML = '';
+                });
+            }
         }
     });
 </script>

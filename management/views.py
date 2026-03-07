@@ -242,7 +242,13 @@ class MarketFormView(ManagementAccessMixin, View):
             form = MarketForm(request.POST, request.FILES)
 
         if form.is_valid():
-            form.save()
+            market_instance = form.save(commit=False)
+
+            if request.POST.get('flag_icons-clear') == 'on':
+                if market_instance.flag_icons:
+                    market_instance.flag_icons.delete(save=False)
+            market_instance.save()
+
             msg = "Market updated successfully." if market_id else "Market created successfully."
             messages.success(request, msg)
 
