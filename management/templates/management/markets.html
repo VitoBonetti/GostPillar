@@ -99,7 +99,17 @@
             <tbody>
                 {% for m in page_obj %}
                 <tr>
-                    <td class="ps-3 fw-bold">{{ m.market }}</td>
+                    <td class="ps-3 fw-bold">
+                        <div class="d-flex align-items-center">
+                            {% if m.flag_icons %}
+                                <img src="{{ m.flag_icons.url }}" alt="{{ m.market }} Flag"  style="width: 32px; height: 32px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light border rounded text-center text-muted me-2 d-flex align-items-center justify-content-center shadow-sm" style="width: 32px; height: 22px;">
+                                    <i class="bi bi-flag" style="font-size: 0.75rem;"></i>
+                                </div>
+                            {% endif %}&nbsp;{{ m.market }}
+                        </div>
+                    </td>
                     <td>{{ m.region.region }}</td>
                     <td>{{ m.code|default:"—" }}</td>
                     <td>

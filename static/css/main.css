@@ -25,3 +25,10 @@ body {
 .orange-header {
     background-color: #FF8C00 !important;
 }
+
+#id_flag_icons::file-selector-button {
+    display: none; /* Hides the default HTML 'Choose File' button but keeps the text */
+}
+#id_flag_icons {
+    color: transparent; /* Hides the 'No file chosen' text */
+}

@@ -67,7 +67,18 @@
 
                     <div class="mb-4">
                         <label class="form-label fw-bold">Flag Icon</label>
-                        {% render_field form.flag_icons class="form-control form-control-sm border-1 border-dark" %}
+
+                        <div id="flag-drop-zone" class="border border-2 border-dashed border-secondary rounded p-4 text-center bg-light position-relative" style="cursor: pointer; transition: all 0.2s;">
+                            <i class="bi bi-image text-secondary" style="font-size: 2rem;"></i>
+                            <h6 class="mt-2 fw-bold text-dark mb-1">Drag & Drop flag image here</h6>
+                            <p class="text-muted small mb-3">or click to browse</p>
+
+                            <div class="text-start d-inline-block position-relative z-3">
+                                {% render_field form.flag_icons id="id_flag_icons" class="form-control-file text-muted small" %}
+                            </div>
+                        </div>
+
+                        <div id="flag-file-name-display" class="text-success fw-bold text-center mt-2 small"></div>
                         <div class="text-danger small mt-1">{{ form.flag_icons.errors|striptags }}</div>
                     </div>
 
@@ -102,4 +113,64 @@
         </div>
     </div>
 </div>
+{% endblock %}
+{% block custom_bottom_script %}
+{{ block.super }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const dropZone = document.getElementById('flag-drop-zone');
+        // Django's default id for the flag_icons field is 'id_flag_icons'
+        const fileInput = document.getElementById('id_flag_icons');
+        const fileDisplay = document.getElementById('flag-file-name-display');
+
+        if(dropZone && fileInput) {
+            // Click to open file dialog (only if they didn't click the input directly)
+            dropZone.addEventListener('click', (e) => {
+                if(e.target !== fileInput) {
+                    fileInput.click();
+                }
+            });
+
+            // Handle Drag events
+            ['dragover', 'dragenter'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.remove('bg-light', 'border-secondary');
+                    dropZone.classList.add('bg-white', 'border-primary');
+                });
+            });
+
+            ['dragleave', 'dragend', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    dropZone.classList.add('bg-light', 'border-secondary');
+                    dropZone.classList.remove('bg-white', 'border-primary');
+                });
+            });
+
+            // Handle Drop
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length) {
+                    fileInput.files = files; // Assign files to the hidden input
+                    // Trigger the change event manually
+                    fileInput.dispatchEvent(new Event('change'));
+                }
+            });
+
+            // Handle manual select / successful drop
+            fileInput.addEventListener('change', function() {
+                if (this.files.length) {
+                    const fileName = this.files[0].name;
+                    fileDisplay.innerHTML = `<i class="bi bi-check-circle-fill"></i> Selected: ${fileName}`;
+                    dropZone.classList.add('border-success', 'bg-white');
+                    dropZone.classList.remove('border-secondary', 'border-primary', 'bg-light');
+
+                    // Show the text we made transparent earlier so the user sees the file name
+                    this.style.color = "inherit";
+                }
+            });
+        }
+    });
+</script>
 {% endblock %}
