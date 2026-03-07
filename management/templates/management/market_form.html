@@ -21,7 +21,13 @@
             <div class="card-body p-4">
                 <form method="post" enctype="multipart/form-data" action="{% if editing %}?market_id={{ market_id }}{% endif %}">
                     {% csrf_token %}
-                    
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger py-2 mb-3">
+                            {% for error in form.non_field_errors %}
+                                <p class="mb-0 fw-bold"><i class="bi bi-exclamation-triangle-fill"></i> {{ error }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Market Name *</label>

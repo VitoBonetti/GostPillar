@@ -51,11 +51,14 @@ class Market(models.Model):
 
                     # Overwrite the uploaded file with our clean, EXIF-free version
                     self.flag_icons.save(self.flag_icons.name, ContentFile(output.getvalue()), save=False)
-            except Exception as e:
-                # If Pillow fails (e.g., corrupted file), we just pass and let Django's standard validation handle it
-                pass
+                else:
+                    self.flag_icons.seek(0)
 
-            super().save(*args, **kwargs)
+            except Exception as e:
+                # If Pillow fails (e.g., corrupted file),
+                self.flag_icons.seek(0)
+
+        super().save(*args, **kwargs)
 
 
 @receiver(post_delete, sender=Market)

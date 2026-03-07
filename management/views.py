@@ -201,11 +201,13 @@ class MarketListView(ManagementAccessMixin, View):
             if not admin_can_delete(request.user):
                 messages.error(request, "You do not have permission to delete markets.")
                 return redirect("markets")
-
-            market = get_object_or_404(Market, uuid=request.POST["delete_id"])
-            market_name = market.market
-            market.delete()
-            messages.success(request, f"Market '{market_name}' deleted successfully.")
+            try:
+                market = get_object_or_404(Market, uuid=request.POST["delete_id"])
+                market_name = market.market
+                market.delete()
+                messages.success(request, f"Market '{market_name}' deleted successfully.")
+            except Exception as e:
+                messages.error(request, f"Could not delete market. Error: {str(e)}")
         return redirect("markets")
 
 
@@ -243,10 +245,6 @@ class MarketFormView(ManagementAccessMixin, View):
 
         if form.is_valid():
             market_instance = form.save(commit=False)
-
-            if request.POST.get('flag_icons-clear') == 'on':
-                if market_instance.flag_icons:
-                    market_instance.flag_icons.delete(save=False)
             market_instance.save()
 
             msg = "Market updated successfully." if market_id else "Market created successfully."
@@ -256,6 +254,14 @@ class MarketFormView(ManagementAccessMixin, View):
                 return redirect("market_form")
             else:
                 return redirect("markets")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    if field == '__all__':
+                        messages.error(request, f"Validation Error: {error}")
+                    else:
+                        # custom error here
+                        pass
 
         return render(request, self.template_name, {'form': form, 'editing': bool(market_id), 'market_id': market_id})
 
