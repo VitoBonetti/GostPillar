@@ -7,6 +7,7 @@ from rbac.management_policy import admin_can_write, admin_can_delete
 from regions.models import Regions
 from markets.models import Market
 from organizations.models import Organization
+from accounts.models import User
 from .forms import RegionsForm, MarketForm, OrganizationForm
 from django.views import View
 from django.contrib import messages
@@ -37,11 +38,31 @@ class ManagementHomeView(ManagementAccessMixin, TemplateView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         try:
+            # Regions Stats
             ctx["active_regions_count"] = Regions.objects.filter(active=True).count()
             ctx["total_regions_count"] = Regions.objects.count()
+
+            # Markets Stats
+            ctx["total_markets_count"] = Market.objects.count()
+            ctx["active_markets_count"] = Market.objects.filter(active=True).count()
+
+            # Organizations Stats
+            ctx["total_orgs_count"] = Organization.objects.count()
+
+            # Users Stats
+            ctx["total_users_count"] = User.objects.count()
+            ctx["admin_users_count"] = User.objects.filter(is_platform_admin=True).count()
+
         except Exception:
+            # Fallback if tables don't exist yet
             ctx["active_regions_count"] = 0
             ctx["total_regions_count"] = 0
+            ctx["total_markets_count"] = 0
+            ctx["active_markets_count"] = 0
+            ctx["total_orgs_count"] = 0
+            ctx["total_users_count"] = 0
+            ctx["admin_users_count"] = 0
+
         return ctx
 
 
@@ -92,17 +113,39 @@ class RegionView(ManagementAccessMixin, View):
         return self._render_page(request, form_region, region_id)
 
     def _render_page(self, request, form_region, region_id=None):
-        # Gather data for the table and statistics
-        regions = Regions.objects.annotate(market_count=Count('markets')).order_by("region")
-        active_count = regions.filter(active=True).count()
-        total_count = regions.count()
+        # Base Queryset
+        queryset = Regions.objects.annotate(market_count=Count('markets'))
+
+        # 1. Search Filter
+        search_query = request.GET.get('search', '')
+        if search_query:
+            queryset = queryset.filter(region__icontains=search_query)
+
+        # 2. Sorting
+        sort_by = request.GET.get('sort', 'region')
+        valid_sorts = ['region', '-region', '-created_at', 'created_at']
+        if sort_by in valid_sorts:
+            queryset = queryset.order_by(sort_by)
+        else:
+            queryset = queryset.order_by('region')
+
+        # 3. Stats
+        active_count = queryset.filter(active=True).count()
+        total_count = queryset.count()
+
+        # 4. Pagination
+        paginator = Paginator(queryset, 10)  # 10 items per page
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
 
         context = {
-            "regions": regions,
+            "page_obj": page_obj,
+            "search_query": search_query,  # Pass search back to template
+            "sort_by": sort_by,  # Pass sort back to template
             "form_region": form_region,
             "active_regions_count": active_count,
             "total_regions_count": total_count,
-            "editing": bool(region_id),  # Boolean flag to toggle template titles
+            "editing": bool(region_id),
             "can_write": admin_can_write(request.user),
             "can_delete": admin_can_delete(request.user),
         }

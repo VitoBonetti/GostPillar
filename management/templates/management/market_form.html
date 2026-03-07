@@ -4,6 +4,7 @@
 {% block title %}{% if editing %}Edit{% else %}Add{% endif %} Market{% endblock %}
 
 {% block content %}
+{% include 'management/sub_navbar.html' %}
 <div class="row mt-4 mb-4 align-items-center">
     <div class="col-auto">
         <a href="{% url 'markets' %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0" style="width: 40px; height: 40px;" title="Back to Markets">

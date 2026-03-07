@@ -51,16 +51,29 @@
             </ul>
 
             <!-- Right items -->
-            <ul class="navbar-nav ms-auto">
+            <ul class="navbar-nav ms-auto align-items-center">
                 {% if is_god or is_admin %}
-                    <li class="nav-item">
-                        <a class="nav-link {% if 'management' in request.path %}text-warning bg-secondary rounded{% endif %}" href="{% url 'management' %}">Management</a>
+                    <li class="nav-item dropdown me-3">
+                        <a class="nav-link dropdown-toggle {% if 'management' in request.path %}text-warning fw-bold{% endif %}" href="#" id="managementDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-gear-fill me-1"></i> Management
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark border-secondary shadow mt-2" aria-labelledby="managementDropdown">
+                            <li>
+                                <a class="dropdown-item {% if request.resolver_match.url_name == 'management' %}bg-warning text-dark fw-bold{% endif %}" href="{% url 'management' %}">
+                                    <i class="bi bi-speedometer2 me-2 {% if request.resolver_match.url_name != 'management' %}text-warning{% endif %}"></i> Dashboard
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider border-secondary"></li>
+                            <li><a class="dropdown-item {% if 'region' in request.resolver_match.url_name %}bg-warning text-dark fw-bold{% endif %}" href="{% url 'regions' %}"><i class="bi bi-globe2 me-2 {% if 'region' not in request.resolver_match.url_name %}text-success{% endif %}"></i> Regions</a></li>
+                            <li><a class="dropdown-item {% if 'market' in request.resolver_match.url_name %}bg-warning text-dark fw-bold{% endif %}" href="{% url 'markets' %}"><i class="bi bi-shop me-2 {% if 'market' not in request.resolver_match.url_name %}text-primary{% endif %}"></i> Markets</a></li>
+                            <li><a class="dropdown-item {% if 'organization' in request.resolver_match.url_name %}bg-warning text-dark fw-bold{% endif %}" href="{% url 'organizations' %}"><i class="bi bi-building me-2 {% if 'organization' not in request.resolver_match.url_name %}text-info{% endif %}"></i> Organizations</a></li>
+                        </ul>
                     </li>
                 {% endif %}
                 <li class="nav-item">
                     <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
                         {% csrf_token %}
-                        <button type="submit" class="nav-link btn btn-link align-baseline">Logout</button>
+                        <button type="submit" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold">Logout</button>
                    </form>
                 </li>
             </ul>

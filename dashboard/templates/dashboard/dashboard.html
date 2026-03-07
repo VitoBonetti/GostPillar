@@ -3,10 +3,34 @@
 {% block title %} Dashboard {% endblock title %}
 {% block custom_script %} {% endblock custom_script %}
 {% block content %}
+    <div class="row mt-5">
+        <div class="col-md-8 mx-auto text-center">
+            <div class="card shadow-lg border-0 border-top border-warning border-5 bg-dark text-light rounded-4">
+                <div class="card-body p-5">
+                    <img src="{% static 'images/logo.png' %}" alt="GOST Pillar Logo" class="mb-4" style="max-height: 80px; filter: drop-shadow(0px 0px 8px rgba(255, 140, 0, 0.4));">
 
-    <p>{{ role_text }}</p>
+                    <h2 class="fw-bold mb-3">Welcome back, <span class="text-warning">{{ request.user.username }}</span>!</h2>
 
-    <p>
-      Logged in as: {{ request.user.username }}
+                    <div class="alert alert-secondary border-secondary bg-dark-subtle text-light d-inline-block shadow-sm px-4 py-3 rounded-pill mb-4">
+                        <i class="bi bi-shield-lock-fill text-warning me-2 fs-5 align-middle"></i>
+                        <span class="align-middle fs-5 fw-bold">{{ role_text }}</span>
+                    </div>
+
+                    <p class="text-muted mb-5 fs-5">
+                        Select an option from the navigation menu above to manage your regions, markets, organizations, assets, tests, and vulnerabilities.
+                    </p>
+
+                    <div class="d-flex justify-content-center gap-3 flex-wrap">
+                        <a href="#" class="btn btn-outline-light px-4 py-2 fw-bold rounded-pill">
+                            <i class="bi bi-list-task me-2"></i>View My Tests
+                        </a>
+                        <a href="#" class="btn btn-warning text-dark px-4 py-2 fw-bold rounded-pill shadow">
+                            <i class="bi bi-bug-fill me-2"></i>Recent Vulnerabilities
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock content %}
 {% block custom_bottom_script %} {% endblock custom_bottom_script %}

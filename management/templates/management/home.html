@@ -2,70 +2,105 @@
 {% block title %}Management Dashboard{% endblock %}
 
 {% block content %}
-<div class="row mt-4 mb-4">
-    <div class="col-12">
-        <h2 class="fw-bold">
-            <i class="bi bi-gear-fill text-secondary me-2"></i> Management Dashboard
-        </h2>
-        <p class="text-light small fst-italic">Central administration for the GOST Pillar.</p>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="card shadow h-100 border-0 border-top border-primary border-5 bg-secondary-subtle">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title mb-0 fw-bold">Regions</h4>
-                    <i class="bi bi-globe2 fs-1 text-primary"></i>
-                </div>
-                <p class="card-text text-muted">Manage broad geographical regions for the platform.</p>
-
-                <div class="d-flex justify-content-between mb-3 mt-4 text-sm">
-                    <span class="badge bg-light text-dark border py-2 px-3">
-                        <i class="bi bi-check-circle-fill text-success me-1"></i> {{ active_regions_count }} Active
-                    </span>
-                    <span class="badge bg-light text-dark border py-2 px-3">
-                        <i class="bi bi-bar-chart-fill text-secondary me-1"></i> {{ total_regions_count }} Total
-                    </span>
-                </div>
-            </div>
-            <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
-                <a href="{% url 'regions' %}" class="btn btn-outline-primary w-100 stretched-link">
-                    Manage Regions <i class="bi bi-arrow-right ms-1"></i>
-                </a>
-            </div>
+{% include 'management/sub_navbar.html' %}
+    <div class="row mt-3 mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                Platform Overview
+            </h2>
+            <p class="text-light small fst-italic mb-0">At-a-glance statistics for the GOST Pillar administration.</p>
         </div>
     </div>
 
-    <div class="col-md-4 mb-4">
-        <div class="card shadow-sm h-100 border-0 border-top border-secondary border-4 bg-light opacity-75">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title mb-0 fw-bold text-muted">Markets</h4>
-                    <i class="bi bi-shop fs-1 text-secondary"></i>
-                </div>
-                <p class="card-text text-muted">
-                    <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
-                        <a href="{% url 'markets' %}" class="btn btn-outline-secondary w-100 stretched-link">
-                            Manage Markets <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
+    <div class="row">
+        <div class="col-md-3 mb-4">
+            <div class="card shadow h-100 border-0 border-top border-success border-5 bg-dark text-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0 fw-bold">Regions</h5>
+                        <i class="bi bi-globe2 fs-2 text-light"></i>
                     </div>
-                </p>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-md-4 mb-4">
-        <div class="card shadow-sm h-100 border-0 border-top border-secondary border-4 bg-light opacity-75">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h4 class="card-title mb-0 fw-bold text-muted">Users & Roles</h4>
-                    <i class="bi bi-people-fill fs-1 text-secondary"></i>
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between mb-2 border-bottom border-light pb-1">
+                            <span class="small">Total Regions</span>
+                            <span class="fw-bold">{{ total_regions_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Active</span>
+                            <span class="fw-bold text-warning">{{ active_regions_count }}</span>
+                        </div>
+                    </div>
                 </div>
-                <p class="card-text text-muted"><em>Coming soon...</em></p>
+                <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
+                    <a href="{% url 'regions' %}" class="btn btn-sm btn-outline-light w-100 stretched-link">Manage</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card shadow h-100 border-0 border-top border-primary border-5 bg-dark text-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0 fw-bold">Markets</h5>
+                        <i class="bi bi-shop fs-2 text-light"></i>
+                    </div>
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between mb-2 border-bottom border-light pb-1">
+                            <span class="small">Total Markets</span>
+                            <span class="fw-bold">{{ total_markets_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="small">Active</span>
+                            <span class="fw-bold text-warning">{{ active_markets_count }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
+                    <a href="{% url 'markets' %}" class="btn btn-sm btn-outline-light w-100 stretched-link">Manage</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card shadow h-100 border-0 border-top border-info border-5 bg-dark text-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0 fw-bold">Organizations</h5>
+                        <i class="bi bi-building fs-2 text-info"></i>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <h2 class="display-5 fw-bold mb-0 text-info">{{ total_orgs_count }}</h2>
+                        <span class="text-muted small">Total Registered</span>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
+                    <a href="{% url 'organizations' %}" class="btn btn-sm btn-outline-info w-100 stretched-link">Manage</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 mb-4">
+            <div class="card shadow h-100 border-0 border-top border-warning border-5 bg-dark text-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="card-title mb-0 fw-bold">Users</h5>
+                        <i class="bi bi-people-fill fs-2 text-warning"></i>
+                    </div>
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between mb-2 border-bottom border-secondary pb-1">
+                            <span class="text-muted small">Total Users</span>
+                            <span class="fw-bold">{{ total_users_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">Platform Admins</span>
+                            <span class="fw-bold text-warning">{{ admin_users_count }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
+                    <button class="btn btn-sm btn-outline-warning w-100 disabled">Manage (Coming Soon)</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 {% endblock %}

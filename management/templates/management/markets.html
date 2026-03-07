@@ -4,6 +4,7 @@
 {% block title %}Manage Markets{% endblock %}
 
 {% block content %}
+{% include 'management/sub_navbar.html' %}
 <div class="row mt-4 mb-4 align-items-center">
     <div class="col-auto">
         <a href="{% url 'management' %}" class="btn btn-outline-secondary rounded-circle d-flex align-items-center justify-content-center p-0" style="width: 40px; height: 40px;" title="Back to Management">
@@ -50,25 +51,26 @@
     </div>
 </div>
 
-<div class="card shadow-sm mb-4">
-    <div class="card-body bg-dark-subtle">
-        <form method="get" class="row g-3 align-items-center">
+<div class="card shadow-sm mb-3 border-secondary bg-dark text-light">
+    <div class="card-body p-3">
+        <form method="get" class="row g-2 align-items-center">
             <div class="col-md-6">
-                <div class="input-group">
-                    <span class="input-group-text bg-dark-subtle border-0"><i class="bi bi-search"></i></span>
-                    <input type="text" name="search" class="form-control form-control-sm border-1 border-dark" placeholder="Search by market name..." value="{{ search_query }}">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text bg-dark border-secondary text-warning"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control bg-dark text-light border-secondary" placeholder="Search by market name..." value="{{ search_query }}">
                 </div>
             </div>
             <div class="col-md-4">
-                <select name="sort" class="form-select border-1 border-dark">
+                <select name="sort" class="form-select form-select-sm bg-dark text-light border-secondary">
                     <option value="market" {% if sort_by == 'market' %}selected{% endif %}>Sort by Name (A-Z)</option>
                     <option value="-market" {% if sort_by == '-market' %}selected{% endif %}>Sort by Name (Z-A)</option>
                     <option value="region__region" {% if sort_by == 'region__region' %}selected{% endif %}>Sort by Region</option>
                     <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Newest First</option>
                 </select>
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-sm btn-secondary w-100">Apply</button>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-sm btn-warning fw-bold w-100">Apply</button>
+                <a href="{% url 'markets' %}" class="btn btn-sm btn-outline-secondary">Clear</a>
             </div>
         </form>
     </div>
@@ -164,25 +166,7 @@
     </div>
     
     {% if page_obj.has_other_pages %}
-    <div class="card-footer border-0 py-3" style="background-color: #2D3A45; color: #EEEEEE;">
-        <nav aria-label="Page navigation">
-            <ul class="pagination justify-content-center mb-0">
-                {% if page_obj.has_previous %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Previous</a></li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Previous</span></li>
-                {% endif %}
-                
-                <li class="page-item active"><span class="page-link">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span></li>
-                
-                {% if page_obj.has_next %}
-                    <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&search={{ search_query }}&sort={{ sort_by }}">Next</a></li>
-                {% else %}
-                    <li class="page-item disabled"><span class="page-link">Next</span></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </div>
+    {% include 'management/pagination.html' %}
     {% endif %}
 </div>
 {% endblock %}
