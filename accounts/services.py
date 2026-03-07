@@ -4,6 +4,9 @@ from accounts.models import Invite, User
 from rbac.policy import is_god, is_admin, user_is_manager_of_market
 from rbac.services import assign_role
 from rbac.models import ROLE_OPERATOR, ROLE_REGIONAL_VIEWER, ROLE_MANAGER
+from django.contrib.auth.hashers import make_password
+import secrets
+
 
 def create_invite(actor: User, email: str, expires_days: int = 7) -> Invite:
     if not actor.is_authenticated:
@@ -12,22 +15,29 @@ def create_invite(actor: User, email: str, expires_days: int = 7) -> Invite:
     if not (is_god(actor) or is_admin(actor) or actor.role_assignments.filter(role=ROLE_MANAGER).exists()):
         raise ValidationError("You are not allowed to invite users.")
 
+    raw_token = secrets.token_urlsafe(32)
+    hashed_token = make_password(raw_token)
+
     invite = Invite(
         email=email,
         invited_by=actor,
+        token_hash=hashed_token,
         expires_at=timezone.now() + timezone.timedelta(days=expires_days),
     )
     invite.full_clean()
     invite.save()
-    return invite
 
-def accept_invite(token: str, username: str, password: str) -> User:
+    return invite, raw_token
+
+def accept_invite(raw_token: str, username: str, password: str, email: str) -> User:
+
     try:
-        invite = Invite.objects.get(token=token)
+        invite = Invite.objects.get(email=email, used_at__isnull=True)
     except Invite.DoesNotExist:
+        raise ValidationError("Invalid or already used invite.")
+
+    if not invite.verify_token(raw_token):
         raise ValidationError("Invalid invite token.")
-    if invite.is_used:
-        raise ValidationError("Invite already used.")
     if invite.is_expired:
         raise ValidationError("Invite expired.")
 

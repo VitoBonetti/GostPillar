@@ -20,15 +20,6 @@
     {% endif %}
 </div>
 
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    {% endfor %}
-{% endif %}
-
 <div class="card shadow mb-4">
     <div class="card-body bg-dark-subtle">
         <form method="get" class="row g-3 align-items-center">
@@ -59,7 +50,8 @@
 
 <div class="card border border-0 shadow rounded">
     <div class="card-body p-0">
-        <table class="table table-dark table-striped table-hover align-middle mb-0">
+        <div class="table-responsive">
+            <table class="table table-dark table-striped table-hover align-middle mb-0" style="min-width: 800px;">
             <thead class="orange-header">
                 <tr>
                     <th class="ps-3" style="background-color: #FF8C00 !important;">Organization Name</th>
@@ -81,11 +73,31 @@
                             </a>
                         {% endif %}
                         {% if can_delete %}
-                            <form method="post" class="d-inline" onsubmit="return confirm('Delete {{ o.name }}?');">
-                                {% csrf_token %}
-                                <input type="hidden" name="delete_id" value="{{ o.uuid }}">
-                                <button type="submit" class="btn btn-sm btn-outline-warning"><i class="bi bi-trash"></i></button>
-                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#deleteOrgModal{{ o.uuid }}" title="Delete {{ o.name }}">
+                                <i class="bi bi-trash"></i>
+                            </button>
+
+                            <div class="modal fade" id="deleteOrgModal{{ o.uuid }}" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content bg-dark text-light border-warning">
+                                        <div class="modal-header border-secondary">
+                                            <h5 class="modal-title fw-bold text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body text-start text-wrap text-break">
+                                            Are you absolutely sure you want to delete the organization <strong>{{ o.name }}</strong>? This action cannot be undone.
+                                        </div>
+                                        <div class="modal-footer border-secondary">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <form method="post" class="d-inline">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="delete_id" value="{{ o.uuid }}">
+                                                <button type="submit" class="btn btn-warning fw-bold text-dark">Yes, Delete</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         {% endif %}
                     </td>
                 </tr>
@@ -94,6 +106,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     </div>
 
     {% if page_obj.has_other_pages %}

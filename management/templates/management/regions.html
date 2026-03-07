@@ -16,15 +16,6 @@
     </div>
 </div>
 
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    {% endfor %}
-{% endif %}
-
 <div class="row mb-4">
     <div class="col-md-3 mb-4">
         <div class="card border-0 border-start border-success border-5 shadow h-100 py-2  bg-secondary-subtle">
@@ -55,10 +46,12 @@
                     <form method="post" action="{% if editing %}?region_id={{ request.GET.region_id }}{% endif %}">
                         {% csrf_token %}
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Region Name</label>
-                            {% render_field form_region.region class="form-control form-control-sm border-1 border-dark" placeholder="e.g. North America" %}
+                            <label class="form-label fw-bold">Region Name *</label>
                             {% if form_region.region.errors %}
+                                {% render_field form_region.region class="form-control form-control-sm border-1 border-dark is-invalid" placeholder="e.g. North America" %}
                                 <div class="text-danger small mt-1">{{ form_region.region.errors|striptags }}</div>
+                            {% else %}
+                                {% render_field form_region.region class="form-control form-control-sm border-1 border-dark" placeholder="e.g. North America" %}
                             {% endif %}
                         </div>
                         <div class="mb-4 form-check form-switch">
@@ -82,7 +75,8 @@
     <div class="col-md-8">
         <div class="card border border-1 border-dark shawod rounded ">
             <div class="card-body p-0 ">
-                <table class="table table-dark table-striped align-middle mb-0">
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped align-middle mb-0" style="min-width: 800px;">
                     <thead class="orange-header">
                         <tr class="orange-header">
                             <th class="ps-3 text-dark orange-header" style="background-color: #FF8C00 !important; width: 40%">Name</th>
@@ -114,13 +108,31 @@
                                     </a>
                                 {% endif %}
                                 {% if can_delete %}
-                                    <form method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete the region {{ r.region }}?');">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="delete_id" value="{{ r.uuid }}">
-                                        <button type="submit" class="btn btn-sm btn-outline-warning">
-                                            <i class="bi bi-trash"></i> Delete
-                                        </button>
-                                    </form>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#deleteRegionModal{{ r.uuid }}">
+                                        <i class="bi bi-trash"></i> Delete
+                                    </button>
+
+                                    <div class="modal fade" id="deleteRegionModal{{ r.uuid }}" tabindex="-1" aria-hidden="true">
+                                        <div class="modal-dialog modal-dialog-centered">
+                                            <div class="modal-content bg-dark text-light border-warning">
+                                                <div class="modal-header border-secondary">
+                                                    <h5 class="modal-title fw-bold text-warning"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Deletion</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body text-start text-wrap text-break">
+                                                    Are you absolutely sure you want to delete the region <strong>{{ r.region }}</strong>? This action cannot be undone.
+                                                </div>
+                                                <div class="modal-footer border-secondary">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                    <form method="post" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="delete_id" value="{{ r.uuid }}">
+                                                        <button type="submit" class="btn btn-warning fw-bold text-dark">Yes, Delete</button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 {% endif %}
                             </td>
                         </tr>
@@ -131,6 +143,7 @@
                         {% endfor %}
                     </tbody>
                 </table>
+                </div>
             </div>
         </div>
     </div>

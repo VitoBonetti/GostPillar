@@ -14,18 +14,6 @@
         <h2 class="mb-0 fw-bold">{% if editing %}Edit Market{% else %}Add New Market{% endif %}</h2>
     </div>
 </div>
-{% if messages %}
-    <div class="row mb-3">
-        <div class="col-md-8 mx-auto">
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        </div>
-    </div>
-{% endif %}
 <div class="row">
     <div class="col-md-8 mx-auto">
         <div class="card shadow bg-dark-subtle border-0 border-top border-warning border-5">
@@ -36,21 +24,33 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Market Name *</label>
-                            {% render_field form.market class="form-control form-control-sm border-1 border-dark" %}
-                            <div class="text-danger small mt-1">{{ form.market.errors|striptags }}</div>
+                            {% if form.market.errors %}
+                                {% render_field form.market class="form-control form-control-sm border-1 border-dark is-invalid" %}
+                                <div class="invalid-feedback fw-bold">{{ form.market.errors|striptags }}</div>
+                            {% else %}
+                                {% render_field form.market class="form-control form-control-sm border-1 border-dark" %}
+                            {% endif %}
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Region *</label>
-                            {% render_field form.region class="form-select form-select-sm border-1 border-dark" %}
-                            <div class="text-danger small mt-1">{{ form.region.errors|striptags }}</div>
+                            {% if form.region.errors %}
+                                {% render_field form.region class="form-select form-select-sm border-1 border-dark is-invalid" %}
+                                <div class="text-danger small mt-1">{{ form.region.errors|striptags }}</div>
+                            {% else %}
+                                {% render_field form.region class="form-select form-select-sm border-1 border-dark" %}
+                            {% endif %}
                         </div>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label fw-bold">Market Code</label>
-                            {% render_field form.code class="form-control form-control-sm border-1 border-dark" placeholder="e.g. US, UK" %}
-                            <div class="text-danger small mt-1">{{ form.code.errors|striptags }}</div>
+                            <label class="form-label fw-bold">Market Code *</label>
+                            {% if form.code.errors %}
+                                {% render_field form.code class="form-control form-control-sm border-1 border-dark is-invalid" placeholder="e.g. US, UK" %}
+                                <div class="text-danger small mt-1">{{ form.code.errors|striptags }}</div>
+                            {% else %}
+                                {% render_field form.code class="form-control form-control-sm border-1 border-dark" placeholder="e.g. US, UK" %}
+                            {% endif %}
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold">Primary Language</label>
@@ -161,12 +161,38 @@
             // Handle manual select / successful drop
             fileInput.addEventListener('change', function() {
                 if (this.files.length) {
-                    const fileName = this.files[0].name;
+                    const file = this.files[0];
+                    const fileName = file.name;
+
+                    // Show file name
                     fileDisplay.innerHTML = `<i class="bi bi-check-circle-fill"></i> Selected: ${fileName}`;
                     dropZone.classList.add('border-success', 'bg-white');
                     dropZone.classList.remove('border-secondary', 'border-primary', 'bg-light');
 
-                    // Show the text we made transparent earlier so the user sees the file name
+                    // NEW: FileReader for live image preview
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            // Find the icon and replace it with the image
+                            const icon = dropZone.querySelector('.bi-image');
+                            if (icon) icon.style.display = 'none';
+
+                            // Check if preview already exists, update or create
+                            let imgPreview = document.getElementById('flag-preview');
+                            if (!imgPreview) {
+                                imgPreview = document.createElement('img');
+                                imgPreview.id = 'flag-preview';
+                                imgPreview.className = 'mt-2 mb-2 rounded shadow-sm';
+                                imgPreview.style.maxHeight = '80px';
+                                imgPreview.style.maxWidth = '100%';
+                                // Insert after the h6 title
+                                dropZone.insertBefore(imgPreview, dropZone.querySelector('h6').nextSibling);
+                            }
+                            imgPreview.src = e.target.result;
+                        }
+                        reader.readAsDataURL(file);
+                    }
+
                     this.style.color = "inherit";
                 }
             });

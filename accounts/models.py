@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
+from django.contrib.auth.hashers import make_password, check_password
 import secrets
 
 
@@ -26,15 +27,13 @@ class User(AbstractUser):
 
 class Invite(models.Model):
     email = models.EmailField()
-    token = models.CharField(max_length=64, unique=True, editable=False)
+    token_hash = models.CharField(max_length=128, editable=False)
     invited_by = models.ForeignKey("accounts.User", on_delete=models.SET_NULL, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     expires_at = models.DateTimeField(null=True, blank=True)
     used_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        if not self.token:
-            self.token = secrets.token_urlsafe(32)
         super().save(*args, **kwargs)
 
     @property
@@ -44,3 +43,6 @@ class Invite(models.Model):
     @property
     def is_expired(self) -> bool:
         return self.expires_at is not None and timezone.now() > self.expires_at
+
+    def verify_token(self, raw_token: str) -> bool:
+        return check_password(raw_token, self.token_hash)

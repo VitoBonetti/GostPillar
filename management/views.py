@@ -16,6 +16,20 @@ from django.shortcuts import (
     redirect
 )
 import json
+import jsonschema
+
+
+# Define the expected structure of the JSON
+ORG_JSON_SCHEMA = {
+    "type": "object",
+    "patternProperties": {
+        "^[a-zA-Z0-9_.-]+$": {
+            "type": "array",
+            "items": {"type": "string", "minLength": 1, "maxLength": 200}
+        }
+    },
+    "additionalProperties": False
+}
 
 class ManagementHomeView(ManagementAccessMixin, TemplateView):
     template_name = "management/home.html"
@@ -306,11 +320,27 @@ class OrganizationFormView(ManagementAccessMixin, View):
             elif submission_type == 'json_file':
                 file = request.FILES.get('json_file')
                 if file:
+                    # SECURE: Check file size before reading into memory (e.g., limit to 2MB)
+                    if file.size > 2 * 1024 * 1024:
+                        messages.error(request, "JSON file is too large. Maximum size is 2MB.")
+                        return redirect("organization_form")
+
                     json_data = json.loads(file.read().decode('utf-8'))
                 else:
                     raise ValueError("No file uploaded.")
+
+            # SECURE: Validate the JSON structure to prevent deeply nested or malformed injections
+            if json_data:
+                jsonschema.validate(instance=json_data, schema=ORG_JSON_SCHEMA)
+
+        except json.JSONDecodeError:
+            messages.error(request, "Invalid JSON formatting.")
+            return redirect("organization_form")
+        except jsonschema.exceptions.ValidationError as e:
+            messages.error(request, f"JSON Schema validation failed: {e.message}")
+            return redirect("organization_form")
         except Exception as e:
-            messages.error(request, f"Invalid JSON format: {str(e)}")
+            messages.error(request, f"Error processing file: {str(e)}")
             return redirect("organization_form")
 
         # 3. Process the parsed JSON
