@@ -52,6 +52,7 @@ class ManagementHomeView(ManagementAccessMixin, TemplateView):
             # Markets Stats
             ctx["total_markets_count"] = Market.objects.count()
             ctx["active_markets_count"] = Market.objects.filter(active=True).count()
+            ctx["key_markets_count"] = Market.objects.filter(key_market=True).count()
 
             # Organizations Stats
             ctx["total_orgs_count"] = Organization.objects.count()
@@ -59,6 +60,8 @@ class ManagementHomeView(ManagementAccessMixin, TemplateView):
             # Users Stats
             ctx["total_users_count"] = User.objects.count()
             ctx["admin_users_count"] = User.objects.filter(is_platform_admin=True).count()
+            ctx["god_user_count"] = User.objects.filter(is_superuser=True).count()
+            ctx["scoped_role"] = ctx["total_users_count"] - (ctx["admin_users_count"] + ctx["god_user_count"])
 
         except Exception:
             # Fallback if tables don't exist yet
@@ -66,9 +69,12 @@ class ManagementHomeView(ManagementAccessMixin, TemplateView):
             ctx["total_regions_count"] = 0
             ctx["total_markets_count"] = 0
             ctx["active_markets_count"] = 0
+            ctx["key_markets_count"] = 0
             ctx["total_orgs_count"] = 0
             ctx["total_users_count"] = 0
             ctx["admin_users_count"] = 0
+            ctx["god_user_count"] = 0
+            ctx["scoped_role"] = 0
 
         return ctx
 

@@ -6,28 +6,28 @@
     <div class="row mt-3 mb-4">
         <div class="col-12">
             <h2 class="fw-bold">
-                Platform Overview
+                Platform Management
             </h2>
-            <p class="text-light small fst-italic mb-0">At-a-glance statistics for the GOST Pillar administration.</p>
+            <p class="text-light small fst-italic mb-0">Platform GOST Pillar administration.</p>
         </div>
     </div>
 
     <div class="row">
-        <div class="col-md-3 mb-4">
+        <div class="col-md-1 mb-4">
             <div class="card shadow h-100 border-0 border-top border-success border-5 bg-dark text-light">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0 fw-bold">Regions</h5>
-                        <i class="bi bi-globe2 fs-2 text-light"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-0 border-bottom border-secondary border-2">
+                        <h5 class="card-title mb-0 fw-bold fs-6">Regions</h5>
+                        <i class="bi bi-globe2 fs-5 text-light"></i>
                     </div>
                     <div class="mt-4">
-                        <div class="d-flex justify-content-between mb-2 border-bottom border-light pb-1">
+                        <div class="d-flex justify-content-between mb-2 pb-1">
                             <span class="small">Total Regions</span>
-                            <span class="fw-bold">{{ total_regions_count }}</span>
+                            <span class="fw-bold badge bg-light rounded-pill text-dark">{{ total_regions_count }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
                             <span class="small">Active</span>
-                            <span class="fw-bold text-warning">{{ active_regions_count }}</span>
+                            <span class="fw-bold badge bg-warning rounded-pill text-dark">{{ active_regions_count }}</span>
                         </div>
                     </div>
                 </div>
@@ -37,21 +37,25 @@
             </div>
         </div>
 
-        <div class="col-md-3 mb-4">
-            <div class="card shadow h-100 border-0 border-top border-primary border-5 bg-dark text-light">
+        <div class="col-md-1 mb-4">
+            <div class="card shadow h-100 border-0 border-top border-success border-5 bg-dark text-light">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0 fw-bold">Markets</h5>
-                        <i class="bi bi-shop fs-2 text-light"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-0 border-bottom border-secondary border-2">
+                        <h5 class="card-title mb-0 fw-bold fs-6">Markets</h5>
+                        <i class="bi bi-shop fs-5 text-light"></i>
                     </div>
                     <div class="mt-4">
-                        <div class="d-flex justify-content-between mb-2 border-bottom border-light pb-1">
+                        <div class="d-flex justify-content-between mb-2 pb-1">
                             <span class="small">Total Markets</span>
-                            <span class="fw-bold">{{ total_markets_count }}</span>
+                            <span class="fw-bold badge bg-light rounded-pill text-dark">{{ total_markets_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between  mb-2 pb-1">
+                            <span class="small">Active</span>
+                            <span class="fw-bold badge bg-warning rounded-pill text-dark">{{ active_markets_count }}</span>
                         </div>
                         <div class="d-flex justify-content-between">
-                            <span class="small">Active</span>
-                            <span class="fw-bold text-warning">{{ active_markets_count }}</span>
+                            <span class="small">Key Market <i class="bi bi-stars text-warning"></i></span>
+                            <span class="fw-bold badge bg-danger rounded-pill text-light">{{ key_markets_count }}</span>
                         </div>
                     </div>
                 </div>
@@ -61,46 +65,117 @@
             </div>
         </div>
 
-        <div class="col-md-3 mb-4">
-            <div class="card shadow h-100 border-0 border-top border-info border-5 bg-dark text-light">
+        <div class="col-md-1 mb-4">
+            <div class="card shadow h-100 border-0 border-top border-success border-5 bg-dark text-light">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0 fw-bold">Organizations</h5>
-                        <i class="bi bi-building fs-2 text-info"></i>
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-0 border-bottom border-secondary border-2">
+                        <h5 class="card-title fs-6 mb-0 fw-bold">Organizations</h5>
+                        <i class="bi bi-building fs-5 text-light"></i>
                     </div>
                     <div class="mt-4 text-center">
-                        <h2 class="display-5 fw-bold mb-0 text-info">{{ total_orgs_count }}</h2>
-                        <span class="text-muted small">Total Registered</span>
+                        <h2 class="display-5 fw-bold mb-0 text-light">{{ total_orgs_count }}</h2>
+                        <span class="text-light small">Total Registered</span>
                     </div>
                 </div>
                 <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
-                    <a href="{% url 'organizations' %}" class="btn btn-sm btn-outline-info w-100 stretched-link">Manage</a>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3 mb-4">
-            <div class="card shadow h-100 border-0 border-top border-warning border-5 bg-dark text-light">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h5 class="card-title mb-0 fw-bold">Users</h5>
-                        <i class="bi bi-people-fill fs-2 text-warning"></i>
-                    </div>
-                    <div class="mt-4">
-                        <div class="d-flex justify-content-between mb-2 border-bottom border-secondary pb-1">
-                            <span class="text-muted small">Total Users</span>
-                            <span class="fw-bold">{{ total_users_count }}</span>
-                        </div>
-                        <div class="d-flex justify-content-between">
-                            <span class="text-muted small">Platform Admins</span>
-                            <span class="fw-bold text-warning">{{ admin_users_count }}</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
-                    <a href="{% url 'users' %}" class="btn btn-sm btn-outline-info w-100 stretched-link">Manage (Coming Soon)</a>
+                    <a href="{% url 'organizations' %}" class="btn btn-sm btn-outline-light w-100 stretched-link">Manage</a>
                 </div>
             </div>
         </div>
     </div>
+
+    <hr class="border border-success border-2 shadow">
+
+     <div class="row mt-3 mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                User Administration
+            </h2>
+            <p class="text-light small fst-italic mb-0">User GOST Pillar Administration.</p>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-1 mb-4">
+            <div class="card shadow h-100 border-0 border-top border-warning border-5 bg-dark text-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-0 border-bottom border-secondary border-2">
+                        <h5 class="card-title mb-0 fw-bold fs-6">Users</h5>
+                        <i class="bi bi-people-fill fs-5 text-light"></i>
+                    </div>
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between mb-2 pb-1">
+                            <span class="text-light small">Total Users</span>
+                            <span class="fw-bold badge bg-light rounded-pill text-dark">{{ total_users_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-1">
+                            <span class="text-light small">Platform GODs</span>
+                            <span class="fw-bold badge bg-danger rounded-pill text-light">{{ god_user_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-1">
+                            <span class="text-light small">Platform Admins</span>
+                            <span class="fw-bold badge bg-warning rounded-pill text-dark">{{ admin_users_count }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-light small">Scoped Roles</span>
+                            <span class="fw-bold badge bg-success rounded-pill text-light">{{ scoped_role }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
+                    <a href="{% url 'users' %}" class="btn btn-sm btn-outline-light w-100 stretched-link">Manage</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <hr class="border border-success border-2 shadow">
+
+     <div class="row mt-3 mb-4">
+        <div class="col-12">
+            <h2 class="fw-bold">
+                Platform Configurations
+            </h2>
+            <p class="text-light small fst-italic mb-0">Platform GOST Pillar Configurations.</p>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <div class="col-md-1 mb-4">
+            <div class="card shadow h-100 border-0 border-top border-danger border-5 bg-dark text-light">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3 border-0 border-bottom border-secondary border-2">
+                        <h5 class="card-title mb-0 fw-bold fs-6">Placeholder</h5>
+                        <i class="bi bi-people-fill fs-5 text-light"></i>
+                    </div>
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between mb-2 pb-1">
+                            <span class="text-light small">Placeholder</span>
+                            <span class="fw-bold badge bg-light rounded-pill text-dark">PLACE</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-1">
+                            <span class="text-light small">Placeholder</span>
+                            <span class="fw-bold badge bg-danger rounded-pill text-light">PLACE</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2 pb-1">
+                            <span class="text-light small">Placeholder</span>
+                            <span class="fw-bold badge bg-warning rounded-pill text-dark">PLACE</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-light small">Placeholder</span>
+                            <span class="fw-bold badge bg-success rounded-pill text-light">PLACE</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3 pt-0 text-center">
+                    <a href="{% url 'users' %}" class="btn btn-sm btn-outline-light w-100 stretched-link">Manage</a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
 {% endblock %}
